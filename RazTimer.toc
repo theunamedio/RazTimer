@@ -1,0 +1,25 @@
+## Interface: 11200
+## Author: TheUnamed (theunamedio)
+## Version: 1.0.0
+## Title: RazTimer |CFF8080801.0.0|R
+## Notes: Timer Add-on  (compatible with BigWigs) 
+## Title-deDE: RazTimer |CFF8080801.0.0|R
+## Notes-deDE: Timer Add-on (kompatibel zu BigWigs)
+## SavedVariablesPerCharacter: RazTimerDB
+
+libs\AceLibrary\AceLibrary.lua
+libs\AceOO-2.0\AceOO-2.0.lua
+libs\AceEvent-2.0\AceEvent-2.0.lua
+libs\AceAddon-2.0\AceAddon-2.0.lua
+libs\AceDB-2.0\AceDB-2.0.lua
+libs\AceModuleCore-2.0\AceModuleCore-2.0.lua
+
+libs\Compost-2.0\Compost-2.0.lua
+libs\PaintChips-2.0\PaintChips-2.0.lua
+libs\CandyBar-2.2\CandyBar-2.0.lua
+libs\CandyBar-2.2\CandyBar-2.2.lua
+libs\Components-1.0\Components-1.0.lua
+
+core.lua
+config.lua
+console.lua
