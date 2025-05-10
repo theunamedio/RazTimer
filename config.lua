@@ -5,20 +5,30 @@
 
 local _G = _G or getfenv(0);
 local RazTimer = _G.RazTimer or {};
-local Components = AceLibrary("Components-1.0");
+local Components = AceLibrary("Components-1.1");
 local Config = {};
 
 RazTimer.config = Config;
 
 -------------------------------------
------     		 Local 		    -----
+-----     	  Constants     	-----
 -------------------------------------
 
-local function createConfigDialog(db)
+local VOICE_TYPES = {
+	none = "disabled",
+	english_male = "male (english)",
+	english_female = "female (english)"
+}
+
+-------------------------------------
+-----     		Local 		    -----
+-------------------------------------
+
+local function createConfigDialog(configDb)
 
 	-- Generate Frame
 	local configFrame = Components.Frame:newDialogBox(UIParent);
-	configFrame:setPosition(db.left, db.top);
+	configFrame:setPosition(configDb.left, configDb.top);
 	-- configFrame:setRelativePosition("CENTER");
 	configFrame:setSize(250, 250);
 	configFrame:setMovable(true);
@@ -33,9 +43,24 @@ local function createConfigDialog(db)
 	<html>
 		<body>
 			<h1>]] .. RazTimer.name .. [[ Config</h1>
-			<p>There are currently no options</p>
+			<p>You can configure ]] .. RazTimer.name .. [[ here.</p>
 		</body>
 	</html>]]);
+
+	-- Generate Options
+	--- VoiceType
+	local voiceTypeLabel = Components.Label:new(configFrame);
+	voiceTypeLabel:setText("Voice Type:");
+	voiceTypeLabel:setPosition(-4, 177);
+	voiceTypeLabel:setSize(100, 20);
+
+	local voiceTypeComboBox = Components.ComboBox:new(configFrame, VOICE_TYPES);
+	voiceTypeComboBox:setPosition(85, 180);
+	voiceTypeComboBox:setSize(120, 20);
+	voiceTypeComboBox:setSelectedValue(Config.settings.sounds.voiceType);
+	voiceTypeComboBox:onSelect(function (_, value)
+		Config.settings.sounds.voiceType = value;
+	end);
 
 	-- Generate Information Content
 	local infoHtml = Components.SimpleHtml:new(configFrame);
@@ -75,8 +100,23 @@ local function createSimpleAnchor(label, db)
 	return anchorFrame;
 end
 
+local function loadSettings(settingsDb)
+
+	local settings = {
+
+		sounds = {
+			voiceType = settingsDb.sounds.voiceType
+		}
+	};
+
+	return settings;
+end
+
 local function init()
 
+	if not Config.settings then
+		Config.settings = loadSettings(RazTimer.db.profile.settings);
+	end
 	if not Config.configDialog then
 		Config.configDialog = createConfigDialog(RazTimer.db.profile.dialogs.config);
 	end
@@ -125,6 +165,7 @@ function Config:save()
 
 	init();
 
+	-- Dialog and Anchor positions
 	local configDialogDb = RazTimer.db.profile.dialogs.config;
 	configDialogDb.left, configDialogDb.top = self.configDialog:getPosition();
 
@@ -141,6 +182,12 @@ function Config:save()
 	pullTimerBarDb.width, pullTimerBarDb.height = self.pullTimerBar:getSize();
 
 	RazTimer:debug("Saved pull timer bar (left:" .. pullTimerBarDb.left .. ", top:" .. pullTimerBarDb.top .. ", width:" .. pullTimerBarDb.width .. ", height:" .. pullTimerBarDb.height .. ")");
+
+	-- Settings
+	local settingsDb = RazTimer.db.profile.settings;
+	settingsDb.sounds.voiceType = self.settings.sounds.voiceType;
+
+	RazTimer:debug("Saved settings (voiceType:" .. settingsDb.sounds.voiceType .. ")");
 end
 
 function Config:reset()

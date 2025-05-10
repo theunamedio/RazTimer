@@ -9,17 +9,17 @@ RazTimer.title = GetAddOnMetadata(RazTimer.name, "Title");
 RazTimer.version = GetAddOnMetadata(RazTimer.name, "Version");
 RazTimer.author = "TheUnamed";
 
-local Components = AceLibrary("Components-1.0");
+local Components = AceLibrary("Components-1.1");
 local Compost = AceLibrary("Compost-2.0");
 local CandyBar = AceLibrary("CandyBar-2.0");
 
 -- intern
 local currentPull = nil;
-local debugEnabled = true;
+local debugEnabled = false;
 local displayMessageLabel = nil;
 local bigWigsSkip = nil;
 
-local defaults = {
+local DEFAULTS = {
 	anchors = {
 		pulltimermessage = {
 			left = 0,
@@ -39,6 +39,30 @@ local defaults = {
 			left = 687.5,
 			top = 332
 		}
+	},
+	settings = {
+		sounds = {
+			voiceType = "english_male"
+		}
+	}
+};
+
+local SOUNDFILES = {
+	english_male = {
+		one = "Interface\\AddOns\\RazTimer\\sounds\\voiceEnglishMaleOne.mp3",
+		two = "Interface\\AddOns\\RazTimer\\sounds\\voiceEnglishMaleTwo.mp3",
+		three = "Interface\\AddOns\\RazTimer\\sounds\\voiceEnglishMaleThree.mp3",
+		four = "Interface\\AddOns\\RazTimer\\sounds\\voiceEnglishMaleFour.mp3",
+		five = "Interface\\AddOns\\RazTimer\\sounds\\voiceEnglishMaleFive.mp3",
+		pull = "Interface\\AddOns\\RazTimer\\sounds\\voiceEnglishMalePull.mp3"
+	},
+	english_female = {
+		one = "Interface\\AddOns\\RazTimer\\sounds\\voiceEnglishFemaleOne.mp3",
+		two = "Interface\\AddOns\\RazTimer\\sounds\\voiceEnglishFemaleTwo.mp3",
+		three = "Interface\\AddOns\\RazTimer\\sounds\\voiceEnglishFemaleThree.mp3",
+		four = "Interface\\AddOns\\RazTimer\\sounds\\voiceEnglishFemaleFour.mp3",
+		five = "Interface\\AddOns\\RazTimer\\sounds\\voiceEnglishFemaleFive.mp3",
+		pull = "Interface\\AddOns\\RazTimer\\sounds\\voiceEnglishFemalePull.mp3"
 	}
 };
 
@@ -58,13 +82,16 @@ end
 function RazTimer:initialize()
 
 	self:RegisterDB("RazTimerDB");
-	self:RegisterDefaults("profile", defaults);
+	self:RegisterDefaults("profile", DEFAULTS);
 
 	self:RegisterEvent("CHAT_MSG_ADDON", function(prefix, message, type, sender)
 		RazTimer:CHAT_MSG_ADDON(prefix, message, type, sender);
 	end);
 	self:RegisterEvent("RPT_DISPLAY_MESSAGE", function(message, color)
 		RazTimer:RPT_DISPLAY_MESSAGE(message, color);
+	end);
+	self:RegisterEvent("RPT_PLAY_SOUND", function(sound)
+		RazTimer:RPT_PLAY_SOUND(sound);
 	end);
 
 	self:print("Loaded. Type /pull <duration> <title> to start a pull timer.");
@@ -105,6 +132,11 @@ function RazTimer:CHAT_MSG_ADDON(prefix, message, type, sender)
 	end
 
 	if sync == "StartTimer" or sync == "PulltimerSync" then
+		if currentPull and (currentPull.endTime > GetTime()) then
+
+			self:stopPullTimer();
+		end
+
 		self:displayPullTimer(duration, sender, title);
 	--[[ elseif (sync == "PulltimerBroadcastSync") then
 		self:displayPullTimer(duration, sender, title); ]]
@@ -137,6 +169,21 @@ function RazTimer:RPT_DISPLAY_MESSAGE(message, color)
 	displayMessageLabel:setAlpha(1);
 	displayMessageLabel:show();
 	displayMessageLabel:fadeOut(3, 3);
+end
+
+function RazTimer:RPT_PLAY_SOUND(sound)
+
+	if self.db.profile.settings.sounds.voiceType == "none" then return; end
+
+	local voiceType = SOUNDFILES[self.db.profile.settings.sounds.voiceType];
+	if voiceType then
+		local soundFile = voiceType[sound];
+		if not PlaySoundFile(soundFile) then 
+			self:debug("Failed to play sound: " .. soundFile);
+		end
+	else
+		self:debug("Unknown voice type: " .. self.db.profile.settings.sounds.voiceType);
+	end
 end
 
 -------------------------------------
@@ -238,37 +285,79 @@ function RazTimer:displayPullTimer(duration, sender, title)
 
 	self:debug(string.format("%s: Pull timer of %d seconds was started by %s", fullTitle, duration, sender));
 
-	if currentPull and (currentPull.endTime > GetTime()) then
-
-		self:stopPullTimerBar(currentPull.id);
-		Compost:Reclaim(currentPull);
-		currentPull = nil;
-	end
-
 	currentPull = Compost:GetTable();
 	currentPull.id = pullTimerId;
 	currentPull.endTime = GetTime() + duration;
 
 	self:startPullTimerBar(pullTimerId, duration, fullTitle, "Interface\\Icons\\Ability_DualWield", "FF00FF00");
 
-	self:queueMessage("Pull in 5", duration - 5, "FFFF4500");
-	self:queueMessage("Pull in 4", duration - 4, "FFFF4500");
-	self:queueMessage("Pull in 3", duration - 3, "FFFF4500");
-	self:queueMessage("Pull in 2", duration - 2, "FFFF4500");
-	self:queueMessage("Pull in 1", duration - 1, "FFFF4500");
-	self:queueMessage("Pull now!", duration, "FF00FF00");
+	currentPull.message5 = self:queueMessage("Pull in 5", duration - 5.2, "FFFF4500");
+	currentPull.sound5 = self:queueSound("five", duration - 5.2);
+
+	currentPull.message4 =  self:queueMessage("Pull in 4", duration - 4.2, "FFFF4500");
+	currentPull.sound4 = self:queueSound("four", duration - 4.2);
+
+	currentPull.message3 =  self:queueMessage("Pull in 3", duration - 3.2, "FFFF4500");
+	currentPull.sound3 = self:queueSound("three", duration - 3.2);
+
+	currentPull.message2 =  self:queueMessage("Pull in 2", duration - 2.2, "FFFF4500");
+	currentPull.sound2 = self:queueSound("two", duration - 2.2);
+
+	currentPull.message1 =  self:queueMessage("Pull in 1", duration - 1.2, "FFFF4500");
+	currentPull.sound1 = self:queueSound("one", duration - 1.2);
+
+	currentPull.message0 =  self:queueMessage("Pull now!", duration - 0.2, "FF00FF00");
+	currentPull.sound0 = self:queueSound("pull", duration - 0.2);
+end
+
+function RazTimer:stopPullTimer()
+
+	if not currentPull then return; end
+
+	self:stopPullTimerBar(currentPull.id);
+	self:cancelQueuedEvent(currentPull.message5);
+	self:cancelQueuedEvent(currentPull.sound5);
+	self:cancelQueuedEvent(currentPull.message4);
+	self:cancelQueuedEvent(currentPull.sound4);
+	self:cancelQueuedEvent(currentPull.message3);
+	self:cancelQueuedEvent(currentPull.sound3);
+	self:cancelQueuedEvent(currentPull.message2);
+	self:cancelQueuedEvent(currentPull.sound2);
+	self:cancelQueuedEvent(currentPull.message1);
+	self:cancelQueuedEvent(currentPull.sound1);
+	self:cancelQueuedEvent(currentPull.message0);
+	self:cancelQueuedEvent(currentPull.sound0);
+
+	Compost:Reclaim(currentPull);
+	currentPull = nil;
 end
 
 function RazTimer:queueMessage(message, delay, color)
 
-	self:ScheduleEvent("RPT_DISPLAY_MESSAGE", delay, message, color);
+	if delay > 0 then
+		return RazTimer:ScheduleEvent("RPT_DISPLAY_MESSAGE", delay, message, color);
+	end
+end
+
+function RazTimer:queueSound(soundFile, delay)
+
+	if delay > 0 then
+		return RazTimer:ScheduleEvent("RPT_PLAY_SOUND", delay, soundFile);
+	end
+end
+
+function RazTimer:cancelQueuedEvent(event)
+
+	if event then
+		RazTimer:CancelScheduledEvent(event);
+	end
 end
 
 function RazTimer:startPullTimerBar(name, duration, text, icon, color)
 
 	local bar = self.db.profile.anchors.pulltimerbar
 	if CandyBar:Register(name, duration, text, icon, color) then
-		
+
 		CandyBar:SetPoint(name, "BOTTOMLEFT", UIParent, "BOTTOMLEFT", bar.left + bar.height - 2, bar.top);
 		CandyBar:SetWidth(name, bar.width - bar.height - 8);
 		CandyBar:SetHeight(name, bar.height - 10);
