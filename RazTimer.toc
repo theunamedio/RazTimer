@@ -1,9 +1,9 @@
 ## Interface: 11200
 ## Author: TheUnamed (theunamedio)
-## Version: 1.1.0
-## Title: RazTimer |CFF8080801.1.0|R
+## Version: 1.1.1
+## Title: |CFFFF6F00Raz|RTimer |CFF8080801.1.1|R
 ## Notes: Timer Add-on  (compatible with BigWigs) 
-## Title-deDE: RazTimer |CFF8080801.1.0|R
+## Title-deDE: |CFFFF6F00Raz|RTimer |CFF8080801.1.1|R
 ## Notes-deDE: Timer Add-on (kompatibel zu BigWigs)
 ## SavedVariablesPerCharacter: RazTimerDB
 
